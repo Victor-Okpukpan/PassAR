@@ -73,7 +73,7 @@ export default function EventsPage() {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <Calendar className="mr-2 h-4 w-4" />
-                  {new Date(event.date).toLocaleDateString()}
+                  {new Date(event.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </div>
                 <div className="flex items-center">
                   <MapPin className="mr-2 h-4 w-4" />
