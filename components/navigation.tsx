@@ -39,9 +39,10 @@ export function Navigation() {
               </Button>
             </Link>
           </div> */}
-          {/* <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center">
             <ModeToggle />
-            <Sheet>
+            <WalletConnect />
+            {/* <Sheet>
               <SheetTrigger className="w-max flex items-center" asChild>
                 <Button size="sm" variant="ghost">
                   <AlignRight className="h-6 w-6" />
@@ -73,8 +74,9 @@ export function Navigation() {
                   </Link>
                 </div>
               </SheetContent>
-            </Sheet>
-          </div> */}
+            </Sheet> */}
+          </div>
+          
           <div className="hidden md:flex items-center">
             <ModeToggle />
             <WalletConnect />
