@@ -1,18 +1,23 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
+// import {
+//   Sheet,
+//   SheetClose,
+//   SheetContent,
+//   SheetDescription,
+//   SheetHeader,
+//   SheetTitle,
+//   SheetTrigger,
+// } from "@/components/ui/sheet";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Ticket, Plus, AlignRight } from "lucide-react";
+  Ticket,
+  // Plus,
+  // AlignRight
+} from "lucide-react";
 import Link from "next/link";
+import { WalletConnect } from "./wallet-connect";
 
 export function Navigation() {
   return (
@@ -23,7 +28,7 @@ export function Navigation() {
           <span className="font-bold text-xl">PassAR</span>
         </Link>
         <nav className="flex items-center space-x-1">
-          <div className="hidden md:flex items-center space-x-4">
+          {/* <div className="hidden md:flex items-center space-x-4">
             <Link href="/events">
               <Button variant="ghost">Browse Events</Button>
             </Link>
@@ -33,8 +38,8 @@ export function Navigation() {
                 Create Event
               </Button>
             </Link>
-          </div>
-          <div className="md:hidden flex items-center">
+          </div> */}
+          {/* <div className="md:hidden flex items-center">
             <ModeToggle />
             <Sheet>
               <SheetTrigger className="w-max flex items-center" asChild>
@@ -69,9 +74,10 @@ export function Navigation() {
                 </div>
               </SheetContent>
             </Sheet>
-          </div>
-          <div className="hidden md:block">
+          </div> */}
+          <div className="hidden md:flex items-center">
             <ModeToggle />
+            <WalletConnect />
           </div>
         </nav>
       </div>

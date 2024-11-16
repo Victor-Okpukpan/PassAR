@@ -1,45 +1,62 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Search, Users } from 'lucide-react';
+import { dryrun } from '@permaweb/aoconnect';
 
 // Mock data - In production, this would come from AO
-const MOCK_EVENTS = [
-  {
-    id: '1',
-    title: 'Web3 Developer Conference 2024',
-    date: '2024-06-15',
-    location: 'Virtual Event',
-    price: 0,
-    capacity: 500,
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80',
-  },
-  {
-    id: '2',
-    title: 'Blockchain Gaming Summit',
-    date: '2024-07-20',
-    location: 'New York, NY',
-    price: 299,
-    capacity: 200,
-    image: 'https://images.unsplash.com/photo-1511882150382-421056c89033?auto=format&fit=crop&q=80',
-  },
-  {
-    id: '3',
-    title: 'DeFi Workshop 2024',
-    date: '2024-08-10',
-    location: 'London, UK',
-    price: 149,
-    capacity: 150,
-    image: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&q=80',
-  },
-];
+// const MOCK_EVENTS = [
+//   {
+//     id: '1',
+//     title: 'Web3 Developer Conference 2024',
+//     date: '2024-06-15',
+//     location: 'Virtual Event',
+//     price: 0,
+//     capacity: 500,
+//     image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80',
+//   },
+//   {
+//     id: '2',
+//     title: 'Blockchain Gaming Summit',
+//     date: '2024-07-20',
+//     location: 'New York, NY',
+//     price: 299,
+//     capacity: 200,
+//     image: 'https://images.unsplash.com/photo-1511882150382-421056c89033?auto=format&fit=crop&q=80',
+//   },
+//   {
+//     id: '3',
+//     title: 'DeFi Workshop 2024',
+//     date: '2024-08-10',
+//     location: 'London, UK',
+//     price: 149,
+//     capacity: 150,
+//     image: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&q=80',
+//   },
+// ];
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [fetchedEvents, setFetchedEvents] = useState([]);
+  console.log(fetchedEvents);
+
+  useEffect(() => {
+    async function getEvents() {
+      const result = await dryrun({
+        process:  process.env.NEXT_PUBLIC_AO_PROCESS!,
+        tags: [{name: "Action", value: "GetEvents"}]
+      })
+
+      console.log(result.Messages[0].Tags[4].value);
+      setFetchedEvents(result.Messages[0].Tags[4].value);
+    }
+    getEvents();
+  }, [])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -57,7 +74,7 @@ export default function EventsPage() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {MOCK_EVENTS.map((event) => (
+        {fetchedEvents.map((event: any) => (
           <Card key={event.id} className="overflow-hidden">
             <div className="relative h-48">
               <img
@@ -81,13 +98,13 @@ export default function EventsPage() {
                 </div>
                 <div className="flex items-center">
                   <Users className="mr-2 h-4 w-4" />
-                  Capacity: {event.capacity}
+                  {event.noOfRegistrations}
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center">
               <span className="font-semibold">
-                {event.price === 0 ? 'Free' : `$${event.price}`}
+                {event.ticketPrice === "0" ? 'Free' : `$${event.ticketPrice}`}
               </span>
               <Button>Get Tickets</Button>
             </CardFooter>
