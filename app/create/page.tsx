@@ -20,7 +20,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
-import Irys from "@irys/sdk";
+// import Irys from "@irys/sdk";
 // import Arweave from "@irys/arweave";
 
 import Arweave from "arweave";
@@ -79,56 +79,52 @@ export default function CreateEventPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (file) {
-        setImageFile(file);
-        // const reader = new FileReader();
-        // reader.onloadend = () => {
-        //   setImagePreview(reader.result as string);
-        // };
-        // reader.readAsDataURL(file);
+  const uploadToArweave = async (file: File): Promise<string> => {
+    try {
+      const buffer = await file.arrayBuffer();
+      const transaction = await arweave.createTransaction({ data: buffer });
+      transaction.addTag('Content-Type', file.type);
+      transaction.addTag('App-Name', 'PassAR');
+      
+      // In production, you would sign the transaction with the user's wallet
+      await arweave.transactions.sign(transaction);
+      await arweave.transactions.post(transaction);
+      console.log(`https://arweave.net/${transaction.id}`);
+      return transaction.id;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to upload image to Arweave');
+    }
+  };
 
-        try {
-          // const base64Data = await convertFileToBase64(file);
-          // setImagePreview(base64Data);
-          setIsUploading(true);
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("upload_preset", "images");
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
 
-          const response = await axios.post(
-            `https://api.cloudinary.com/v1_1/dmzgojgng/image/upload`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          const imageUrl = response.data.secure_url;
-          // const hash: any = await uploadToArweave(file);
-          setImageHash(imageUrl);
-          setImagePreview(imageUrl);
-          toast({
-            title: "Image uploaded successfully",
-            // description: `Transaction ID: ${hash}`,
-          });
-        } catch (error: any) {
-          toast({
-            title: "Upload failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        } finally {
-          setIsUploading(false);
-        }
+      try {
+        setIsUploading(true);
+        const hash = await uploadToArweave(file);
+        setImageHash(hash);
+        toast({
+          title: "Image uploaded successfully",
+          description: `Transaction ID: ${hash}`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Upload failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
       }
-    },
-    [toast]
-  );
+    }
+  }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

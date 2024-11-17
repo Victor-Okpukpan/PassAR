@@ -1,23 +1,16 @@
-"use client";
+'use client';
 
-// import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/mode-toggle";
-// import {
-//   Sheet,
-//   SheetClose,
-//   SheetContent,
-//   SheetDescription,
-//   SheetHeader,
-//   SheetTitle,
-//   SheetTrigger,
-// } from "@/components/ui/sheet";
+import { Button } from '@/components/ui/button';
+import { ModeToggle } from '@/components/mode-toggle';
+import { WalletConnect } from '@/components/wallet-connect';
+import { Ticket, Menu } from 'lucide-react';
+import Link from 'next/link';
 import {
-  Ticket,
-  // Plus,
-  // AlignRight
-} from "lucide-react";
-import Link from "next/link";
-import { WalletConnect } from "./wallet-connect";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function Navigation() {
   return (
@@ -27,60 +20,33 @@ export function Navigation() {
           <Ticket className="h-6 w-6" />
           <span className="font-bold text-xl">PassAR</span>
         </Link>
-        <nav className="flex items-center space-x-1">
-          {/* <div className="hidden md:flex items-center space-x-4">
+        
+        <nav className="flex items-center space-x-1 lg:space-x-4">
+          <div className="hidden sm:flex items-center space-x-4">
             <Link href="/events">
               <Button variant="ghost">Browse Events</Button>
             </Link>
-            <Link href="/create">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Event
-              </Button>
+            <Link href="/dashboard">
+              <Button variant="ghost">Creator Dashboard</Button>
             </Link>
-          </div> */}
-          <div className="md:hidden flex items-center">
-            <ModeToggle />
-            <WalletConnect />
-            {/* <Sheet>
-              <SheetTrigger className="w-max flex items-center" asChild>
-                <Button size="sm" variant="ghost">
-                  <AlignRight className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle className="sr-only">Navigation bar</SheetTitle>
-                  <SheetDescription className="sr-only">Menu</SheetDescription>
-                </SheetHeader>
-                <div className="flex flex-col items-center space-y-4 mt-8">
-                  <Link href="/events" className="w-full flex justify-start">
-                    <SheetClose asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full flex justify-start"
-                      >
-                        Browse Events
-                      </Button>
-                    </SheetClose>
-                  </Link>
-                  <Link href="/create" className="w-full">
-                    <SheetClose asChild>
-                      <Button className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Event
-                      </Button>
-                    </SheetClose>
-                  </Link>
-                </div>
-              </SheetContent>
-            </Sheet> */}
           </div>
-          
-          <div className="hidden md:flex items-center">
-            <ModeToggle />
-            <WalletConnect />
-          </div>
+          <ModeToggle />
+          <WalletConnect />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="sm:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/events">Browse Events</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard">Creator Dashboard</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
       </div>
     </header>
