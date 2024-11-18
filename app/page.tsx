@@ -8,16 +8,16 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <section className="flex-1 relative">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center">
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="relative container mx-auto px-4 py-32">
           <div className="max-w-2xl text-white">
             <h1 className="text-5xl font-bold mb-6">
-              Decentralized Event Ticketing on AO.
+              Decentralized Event Management on AO.
             </h1>
             <p className="text-xl mb-8 text-gray-200">
-              Create, manage, and discover events with verifiable tickets on the
+              Create, manage, and discover events on the
               permaweb.
             </p>
             <div className="flex gap-4">
@@ -37,7 +37,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 bg-muted">
+      <section className="py-10 md:py-24 bg-muted">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-16">
             Why Choose PassAR?

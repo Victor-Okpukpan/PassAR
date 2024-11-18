@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { message, result, createDataItemSigner } from '@permaweb/aoconnect';
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,13 +20,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
-// import Irys from "@irys/sdk";
-// import Arweave from "@irys/arweave";
-
 import Arweave from "arweave";
-import axios from "axios";
 
-// const arweave = new Arweave({ url: "https://arweave.net" });
 const arweave = Arweave.init({
   host: "arweave.net",
   port: 443,
@@ -101,15 +96,13 @@ export default function CreateEventPage() {
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
       reader.readAsDataURL(file);
 
       try {
         setIsUploading(true);
         const hash = await uploadToArweave(file);
-        setImageHash(hash);
+        setImageHash(`https://arweave.net/${hash}`);
+        setImagePreview(`https://arweave.net/${hash}`)
         toast({
           title: "Image uploaded successfully",
           description: `Transaction ID: ${hash}`,
@@ -167,8 +160,6 @@ export default function CreateEventPage() {
         imageHash,
       };
 
-      console.log(eventData);
-
       const messageId = await message({
         process:  process.env.NEXT_PUBLIC_AO_PROCESS!,
         tags: [
@@ -186,9 +177,7 @@ export default function CreateEventPage() {
       const _result = await result({
         message: messageId,
         process: process.env.NEXT_PUBLIC_AO_PROCESS!,
-      })
-
-      console.log(_result);
+      });
 
       toast({
         title: "Event Created",

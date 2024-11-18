@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export function WalletConnect() {
+export function WalletConnect({variant, style}: any) {
   const [address, setAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -78,7 +79,7 @@ export function WalletConnect() {
   };
 
   const truncateAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    return `${addr.slice(0, 6)}...${addr.slice(-5)}`;
   };
 
   return (
@@ -86,9 +87,9 @@ export function WalletConnect() {
       {!address ? (
         <Button 
           onClick={connectWallet} 
-          variant="blank" 
+          variant={variant} 
           disabled={isLoading}
-          className="min-w-[140px]"
+          className={`${style} border`}
         >
           {isLoading ? (
             <>

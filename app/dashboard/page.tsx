@@ -1,37 +1,59 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, MapPin, Plus, Users, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
-
-// Mock data - In production, this would be filtered by creator's address
-const MOCK_CREATOR_EVENTS = [
-  {
-    id: '1',
-    title: 'Web3 Developer Conference 2024',
-    date: '2024-06-15',
-    location: 'Virtual Event',
-    price: 0,
-    capacity: 500,
-    ticketsSold: 234,
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80',
-  },
-];
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Calendar, MapPin, Plus, Users, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { dryrun } from "@permaweb/aoconnect";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
+  console.log(events)
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function getEvents() {
+      try {
+        const result = await dryrun({
+          process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+          tags: [{ name: "Action", value: "GetUserEvents" }],
+        });
+        setEvents(result.Messages[0].Tags[4].value);
+        console.log(result)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch events. Please try again later.",
+          variant: "destructive",
+        });
+        console.log(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    getEvents();
+  }, [toast]);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">Creator Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage your events and track ticket sales</p>
+          <p className="text-muted-foreground mt-1">
+            Manage your events and track ticket sales
+          </p>
         </div>
         <Link href="/create">
           <Button>
@@ -41,13 +63,35 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {MOCK_CREATOR_EVENTS.length === 0 ? (
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="h-48" />
+              <CardHeader>
+                <Skeleton className="h-8 w-3/4" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-10 w-full" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : events.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>
             <div className="max-w-sm mx-auto">
               <h3 className="text-lg font-semibold mb-2">No Events Yet</h3>
               <p className="text-muted-foreground mb-6">
-                Start creating your first event and manage ticket sales right here.
+                Start creating your first event and manage ticket sales right
+                here.
               </p>
               <Link href="/create">
                 <Button>
@@ -60,7 +104,7 @@ export default function DashboardPage() {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_CREATOR_EVENTS.map((event) => (
+          {events.map((event) => (
             <Card key={event.id} className="overflow-hidden">
               <div className="relative h-48">
                 <img
@@ -90,15 +134,16 @@ export default function DashboardPage() {
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <span className="font-semibold">
-                  {event.price === 0 ? 'Free' : `$${event.price}`}
+                  {event.price === 0 ? "Free" : `$${event.price}`}
                 </span>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => {
                     setIsLoading(true);
                     toast({
                       title: "Coming Soon",
-                      description: "Event management features are under development",
+                      description:
+                        "Event management features are under development",
                     });
                     setIsLoading(false);
                   }}
@@ -110,7 +155,7 @@ export default function DashboardPage() {
                       Loading...
                     </>
                   ) : (
-                    'Manage Event'
+                    "Manage Event"
                   )}
                 </Button>
               </CardFooter>

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { ModeToggle } from '@/components/mode-toggle';
+import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { WalletConnect } from '@/components/wallet-connect';
-import { Ticket, Menu } from 'lucide-react';
-import Link from 'next/link';
+import { Ticket, Menu } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 export function Navigation() {
   return (
@@ -20,8 +20,8 @@ export function Navigation() {
           <Ticket className="h-6 w-6" />
           <span className="font-bold text-xl">PassAR</span>
         </Link>
-        
-        <nav className="flex items-center space-x-1 lg:space-x-4">
+
+        <nav className="flex items-center space-x-1 lg:space-x-2">
           <div className="hidden sm:flex items-center space-x-4">
             <Link href="/events">
               <Button variant="ghost">Browse Events</Button>
@@ -31,7 +31,7 @@ export function Navigation() {
             </Link>
           </div>
           <ModeToggle />
-          <WalletConnect />
+          <WalletConnect style="min-w-[140px]" variant="blank" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="sm:hidden">

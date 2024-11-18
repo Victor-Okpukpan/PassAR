@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+// import { ArweaveWalletKit } from "arweave-wallet-kit";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,9 +38,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navigation />
-          <main>{children}</main>
-          <Toaster />
+          {/* <ArweaveWalletKit > */}
+            <Navigation />
+            <main>{children}</main>
+            <Toaster />
+          {/* </ArweaveWalletKit> */}
         </ThemeProvider>
       </body>
     </html>
