@@ -22,7 +22,7 @@ export function Navigation() {
         </Link>
 
         <nav className="flex items-center space-x-1 lg:space-x-2">
-          <div className="hidden sm:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4">
             <Link href="/events">
               <Button variant="ghost">Browse Events</Button>
             </Link>
@@ -34,7 +34,7 @@ export function Navigation() {
           <WalletConnect style="min-w-[140px]" variant="blank" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="sm:hidden">
+              <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>

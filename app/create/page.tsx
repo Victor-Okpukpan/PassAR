@@ -179,6 +179,8 @@ export default function CreateEventPage() {
         process: process.env.NEXT_PUBLIC_AO_PROCESS!,
       });
 
+      console.log(_result);
+
       toast({
         title: "Event Created",
         description: `Message ID: ${messageId}`,
