@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
 import Arweave from "arweave";
+import { useRouter } from 'next/navigation';
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -38,6 +39,7 @@ interface FormErrors {
 }
 
 export default function CreateEventPage() {
+  const router = useRouter();
   const [date, setDate] = useState<Date>();
   const [isFree, setIsFree] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -194,6 +196,7 @@ export default function CreateEventPage() {
       setPrice("");
       setIsFree(false);
       removeImage();
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
         title: "Failed to create event",

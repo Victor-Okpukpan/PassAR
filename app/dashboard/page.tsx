@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client";
@@ -13,7 +14,11 @@ import {
 } from "@/components/ui/card";
 import { Calendar, MapPin, Plus, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { createDataItemSigner, dryrun, message, result } from "@permaweb/aoconnect";
+import {
+  createDataItemSigner,
+  dryrun,
+  message,
+} from "@permaweb/aoconnect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -29,6 +34,7 @@ import { Label } from "@/components/ui/label";
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<any[]>([]);
+  console.log(events);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -40,9 +46,18 @@ export default function DashboardPage() {
       try {
         const result = await dryrun({
           process: process.env.NEXT_PUBLIC_AO_PROCESS!,
-          tags: [{ name: "Action", value: "GetUserEvents" }],
+          tags: [{ name: "Action", value: "GetEvents" }],
         });
-        setEvents(result.Messages[0].Tags[4].value);
+        const allEvents = result.Messages[0].Tags[4].value;
+        const connectedWalletAddress =
+          await window.arweaveWallet.getActiveAddress();
+
+        const filteredEvents = allEvents.filter(
+          (event: any) =>
+            event.creator.toLowerCase() === connectedWalletAddress.toLowerCase()
+        );
+
+        setEvents(filteredEvents);
       } catch (error) {
         toast({
           title: "Error",
@@ -54,11 +69,10 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     }
-  
+
     getEvents();
   }, [toast]);
 
- 
   const handleStatusUpdate = async (event: any) => {
     setIsUpdating(true);
     try {
@@ -67,26 +81,21 @@ export default function DashboardPage() {
         tags: [
           { name: "Action", value: "ModifyEventStatus" },
           { name: "EventId", value: event.id.toString() },
-          { name: "Status", value: (!event.active).toString() },
+          { name: "EventStatus", value: (!event.active).toString() },
         ],
         signer: createDataItemSigner(window.arweaveWallet),
       });
 
-      const _result = await result({
-        message: messageId,
-        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
-      });
-
-      console.log(_result);
-
       // Update local state
-      setEvents(events.map(e => 
-        e.id === event.id ? { ...e, active: !e.active } : e
-      ));
+      setEvents(
+        events.map((e) => (e.id === event.id ? { ...e, active: !e.active } : e))
+      );
 
       toast({
         title: "Success",
-        description: `Event status has been ${!event.active ? 'activated' : 'deactivated'}`,
+        description: `Event status has been ${
+          !event.active ? "activated" : "deactivated"
+        }`,
       });
     } catch (error) {
       toast({
@@ -168,11 +177,13 @@ export default function DashboardPage() {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute top-2 right-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    event.active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      event.active
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
                     {event.active ? "Active" : "Inactive"}
                   </span>
                 </div>
@@ -184,7 +195,11 @@ export default function DashboardPage() {
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4" />
-                    {new Date(event.date).toLocaleDateString()}
+                    {new Date(event.date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
                   </div>
                   <div className="flex items-center">
                     <MapPin className="mr-2 h-4 w-4" />
@@ -192,13 +207,13 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    {event.ticketsSold} / {event.capacity} tickets sold
+                    {event.noOfRegistrations} registered
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <span className="font-semibold">
-                  {event.price === 0 ? "Free" : `$${event.price}`}
+                  {event.ticketPrice === "0" ? "Free" : `$${event.ticketPrice}`}
                 </span>
                 <Button
                   variant="outline"
@@ -228,7 +243,8 @@ export default function DashboardPage() {
           <DialogHeader>
             <DialogTitle>Manage Event</DialogTitle>
             <DialogDescription>
-              Update the status of your event. Active events are visible to attendees and can receive ticket purchases.
+              Update the status of your event. Active events are visible to
+              attendees and can receive ticket purchases.
             </DialogDescription>
           </DialogHeader>
           {selectedEvent && (
