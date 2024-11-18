@@ -13,14 +13,26 @@ import {
 } from "@/components/ui/card";
 import { Calendar, MapPin, Plus, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { dryrun } from "@permaweb/aoconnect";
+import { createDataItemSigner, dryrun, message, result } from "@permaweb/aoconnect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<any[]>([]);
-  console.log(events)
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,20 +43,63 @@ export default function DashboardPage() {
           tags: [{ name: "Action", value: "GetUserEvents" }],
         });
         setEvents(result.Messages[0].Tags[4].value);
-        console.log(result)
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to fetch events. Please try again later.",
           variant: "destructive",
         });
-        console.log(error);
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
     }
+  
     getEvents();
   }, [toast]);
+
+ 
+  const handleStatusUpdate = async (event: any) => {
+    setIsUpdating(true);
+    try {
+      const messageId = await message({
+        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+        tags: [
+          { name: "Action", value: "ModifyEventStatus" },
+          { name: "EventId", value: event.id.toString() },
+          { name: "Status", value: (!event.active).toString() },
+        ],
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+
+      const _result = await result({
+        message: messageId,
+        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+      });
+
+      console.log(_result);
+
+      // Update local state
+      setEvents(events.map(e => 
+        e.id === event.id ? { ...e, active: !e.active } : e
+      ));
+
+      toast({
+        title: "Success",
+        description: `Event status has been ${!event.active ? 'activated' : 'deactivated'}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update event status. Please try again later.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setIsUpdating(false);
+      setIsDialogOpen(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -112,6 +167,15 @@ export default function DashboardPage() {
                   alt={event.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
+                <div className="absolute top-2 right-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    event.active
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                    {event.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
               </div>
               <CardHeader>
                 <CardTitle>{event.title}</CardTitle>
@@ -139,20 +203,15 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setIsLoading(true);
-                    toast({
-                      title: "Coming Soon",
-                      description:
-                        "Event management features are under development",
-                    });
-                    setIsLoading(false);
+                    setSelectedEvent(event);
+                    setIsDialogOpen(true);
                   }}
-                  disabled={isLoading}
+                  disabled={isUpdating}
                 >
-                  {isLoading ? (
+                  {isUpdating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
+                      Updating...
                     </>
                   ) : (
                     "Manage Event"
@@ -163,6 +222,39 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Event</DialogTitle>
+            <DialogDescription>
+              Update the status of your event. Active events are visible to attendees and can receive ticket purchases.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="py-6">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="event-status">Event Status</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="event-status"
+                    checked={selectedEvent.active}
+                    onCheckedChange={() => handleStatusUpdate(selectedEvent)}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {selectedEvent.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
