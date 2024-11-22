@@ -37,7 +37,15 @@ export default function EventsPage() {
           process: process.env.NEXT_PUBLIC_AO_PROCESS!,
           tags: [{ name: "Action", value: "GetEvents" }],
         });
-        setEvents(result.Messages[0].Tags[4].value);
+
+        const allEvents = result.Messages[0].Tags[4].value.map(
+          (event: any) => ({
+            ...event,
+            active: event.active === "true", // Convert active property to a boolean
+          })
+        );
+
+        setEvents(allEvents);
       } catch (error) {
         toast({
           title: "Error",
@@ -64,7 +72,13 @@ export default function EventsPage() {
     checkWallet();
   }, [toast]);
 
-  const handleGetTickets = async (id: number) => {
+  const convertTo12Decimals = (value: string): string => {
+    const numericValue = parseFloat(value);
+    const multipliedValue = numericValue * 10 ** 12;
+    return multipliedValue.toFixed(0);
+  };
+
+  const handleGetTickets = async (id: number, ticketPrice: string) => {
     if (!walletAddress) {
       toast({
         title: "Wallet Required",
@@ -74,19 +88,38 @@ export default function EventsPage() {
     }
 
     try {
-      const messageId = await message({
-        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
-        tags: [
-          { name: "Action", value: "RegisterForEvent" },
-          { name: "EventId", value: id.toString() },
-        ],
-        signer: createDataItemSigner(window.arweaveWallet),
-      });
+      if (ticketPrice === "0") {
+        const messageId = await message({
+          process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+          tags: [
+            { name: "Action", value: "RegisterForEvent" },
+            { name: "EventId", value: id.toString() },
+          ],
+          signer: createDataItemSigner(window.arweaveWallet),
+        });
 
-      toast({
-        title: "Registered!",
-        description: `Message Id: ${messageId}`,
-      });
+        toast({
+          title: "Registered for Free!",
+          description: `Message Id: ${messageId}`,
+        });
+      } else {
+        const messageId = await message({
+          process: process.env.NEXT_PUBLIC_TOKEN_PROCESS!,
+          tags: [
+            { name: "Action", value: "Transfer" },
+            { name: "Quantity", value: convertTo12Decimals(ticketPrice) },
+            { name: "Recipient", value: process.env.NEXT_PUBLIC_AO_PROCESS! },
+            { name: "X-EventId", value: id.toString() },
+          ],
+          signer: createDataItemSigner(window.arweaveWallet),
+        });
+
+        toast({
+          title: "Paid Ticket",
+          description: `Event requires payment. Implement payment logic here.`,
+        });
+        // Add the logic for handling payment here
+      }
 
       async function getEvents() {
         try {
@@ -112,7 +145,6 @@ export default function EventsPage() {
     }
   };
 
- 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -191,22 +223,38 @@ export default function EventsPage() {
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <span className="font-semibold">
-                  {event.ticketPrice === "0" ? "Free" : `$${event.ticketPrice}`}
+                  {event.ticketPrice === "0" ? "Free" : `$EPR ${event.ticketPrice}`}
                 </span>
                 <Button
                   disabled={
                     !event.active ||
-                    (event.registeredUsers &&
-                      event.registeredUsers.some(
-                        (wallet: string) =>
-                          wallet.toLowerCase() === walletAddress?.toLowerCase()
-                      ))
+                    (event.ticketPrice !== "0"
+                      ? event.paidUsers &&
+                        event.paidUsers.some(
+                          (wallet: string) =>
+                            wallet.toLowerCase() ===
+                            walletAddress?.toLowerCase()
+                        )
+                      : event.registeredUsers &&
+                        event.registeredUsers.some(
+                          (wallet: string) =>
+                            wallet.toLowerCase() ===
+                            walletAddress?.toLowerCase()
+                        ))
                   }
-                  className=" disabled:opacity-85"
-                  onClick={() => handleGetTickets(event.id)}
+                  className="disabled:opacity-85"
+                  onClick={() => handleGetTickets(event.id, event.ticketPrice)}
                 >
                   {!event.active
                     ? "Event Inactive"
+                    : event.ticketPrice !== "0"
+                    ? event.paidUsers &&
+                      event.paidUsers.some(
+                        (wallet: string) =>
+                          wallet.toLowerCase() === walletAddress?.toLowerCase()
+                      )
+                      ? "Already paid"
+                      : "Register"
                     : event.registeredUsers &&
                       event.registeredUsers.some(
                         (wallet: string) =>

@@ -52,10 +52,16 @@ export default function DashboardPage() {
         const connectedWalletAddress =
           await window.arweaveWallet.getActiveAddress();
 
-        const filteredEvents = allEvents.filter(
-          (event: any) =>
-            event.creator.toLowerCase() === connectedWalletAddress.toLowerCase()
-        );
+          const filteredEvents = allEvents
+          .filter(
+            (event: any) =>
+              event.creator.toLowerCase() ===
+              connectedWalletAddress.toLowerCase()
+          )
+          .map((event: any) => ({
+            ...event,
+            active: event.active === "true",
+          }));
 
         setEvents(filteredEvents);
       } catch (error) {

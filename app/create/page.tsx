@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { message, result, createDataItemSigner } from '@permaweb/aoconnect';
+import { message, result, createDataItemSigner } from "@permaweb/aoconnect";
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,8 @@ import { cn } from "@/lib/utils";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
 import Arweave from "arweave";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import { FaucetButton } from "@/components/faucet-button";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -62,7 +63,6 @@ export default function CreateEventPage() {
     if (!date) newErrors.date = "Event date is required";
     if (!location.trim()) newErrors.location = "Location is required";
 
-
     if (!isFree) {
       const priceNum = Number(price);
       if (!price || isNaN(priceNum) || priceNum <= 0) {
@@ -80,46 +80,49 @@ export default function CreateEventPage() {
     try {
       const buffer = await file.arrayBuffer();
       const transaction = await arweave.createTransaction({ data: buffer });
-      transaction.addTag('Content-Type', file.type);
-      transaction.addTag('App-Name', 'PassAR');
-      
+      transaction.addTag("Content-Type", file.type);
+      transaction.addTag("App-Name", "PassAR");
+
       // In production, you would sign the transaction with the user's wallet
       await arweave.transactions.sign(transaction);
       await arweave.transactions.post(transaction);
       console.log(`https://arweave.net/${transaction.id}`);
       return transaction.id;
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to upload image to Arweave');
+      throw new Error(error.message || "Failed to upload image to Arweave");
     }
   };
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (file) {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
 
-      try {
-        setIsUploading(true);
-        const hash = await uploadToArweave(file);
-        setImageHash(`https://arweave.net/${hash}`);
-        setImagePreview(`https://arweave.net/${hash}`)
-        toast({
-          title: "Image uploaded successfully",
-          description: `Transaction ID: ${hash}`,
-        });
-      } catch (error: any) {
-        toast({
-          title: "Upload failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setIsUploading(false);
+        try {
+          setIsUploading(true);
+          const hash = await uploadToArweave(file);
+          setImageHash(`https://arweave.net/${hash}`);
+          setImagePreview(`https://arweave.net/${hash}`);
+          toast({
+            title: "Image uploaded successfully",
+            description: `Transaction ID: ${hash}`,
+          });
+        } catch (error: any) {
+          toast({
+            title: "Upload failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploading(false);
+        }
       }
-    }
-  }, [toast]);
+    },
+    [toast]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -163,15 +166,15 @@ export default function CreateEventPage() {
       };
 
       const messageId = await message({
-        process:  process.env.NEXT_PUBLIC_AO_PROCESS!,
+        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
         tags: [
-          {name: "Action", value: "AddNewEventT"},
-          {name: "EventTitle", value: eventData.title},
-          {name: "EventDescription", value: eventData.description},
-          {name: "EventDate", value: eventData.date},
-          {name: "Location", value: eventData.location},
-          {name: "TicketPrice", value: eventData.price},
-          {name: "ImageUrl", value: eventData.imageHash as string},
+          { name: "Action", value: "AddNewEventT" },
+          { name: "EventTitle", value: eventData.title },
+          { name: "EventDescription", value: eventData.description },
+          { name: "EventDate", value: eventData.date },
+          { name: "Location", value: eventData.location },
+          { name: "TicketPrice", value: eventData.price },
+          { name: "ImageUrl", value: eventData.imageHash as string },
         ],
         signer: createDataItemSigner(window.arweaveWallet),
       });
@@ -211,7 +214,13 @@ export default function CreateEventPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Create New Event</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">Create New Event</h1>
+
+          <div className="flex justify-end">
+            <FaucetButton />
+          </div>
+        </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2">

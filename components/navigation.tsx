@@ -1,9 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { WalletConnect } from '@/components/wallet-connect';
-import { Ticket, Menu } from "lucide-react";
+import { WalletConnect } from "@/components/wallet-connect";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -11,14 +12,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+// import Image from "next/image";
 
 export function Navigation() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <Ticket className="h-6 w-6" />
-          <span className="font-bold text-xl">PassAR</span>
+          {/* <Ticket className="h-6 w-6" />
+          <span className="font-bold text-xl">PassAR</span> */}
+
+          <div className="h-full overflow-hidden">
+            <img
+              src="https://arweave.net/bkTXbYcgA_QOltD8gD8qwLgQNR6DzL1Jz3fmSzpYec8"
+              alt="PassAR"
+              className="max-w-[100px] sm:max-w-[150px]"
+            />
+          </div>
         </Link>
 
         <nav className="flex items-center space-x-1 lg:space-x-2">
