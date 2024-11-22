@@ -12,21 +12,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// import Image from "next/image";
+
+//for dark
+// https://arweave.net/GGUOSecf9bR87iDJqfcLF_lsh8qrGJ4CHkgV4lMCrbY
+
+//for light:
+//https://arweave.net/fduWA6UFKlOw532D0A53E0LjhPO9HwRwzBUtEoDSb64
 
 export function Navigation() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          {/* <Ticket className="h-6 w-6" />
-          <span className="font-bold text-xl">PassAR</span> */}
-
           <div className="h-full overflow-hidden">
+          <img
+              src="https://arweave.net/fduWA6UFKlOw532D0A53E0LjhPO9HwRwzBUtEoDSb64"
+              alt="PassAR Light"
+              className="max-w-[100px] sm:max-w-[150px] dark:hidden"
+            />
             <img
-              src="https://arweave.net/bkTXbYcgA_QOltD8gD8qwLgQNR6DzL1Jz3fmSzpYec8"
-              alt="PassAR"
-              className="max-w-[100px] sm:max-w-[150px]"
+              src="https://arweave.net/GGUOSecf9bR87iDJqfcLF_lsh8qrGJ4CHkgV4lMCrbY"
+              alt="PassAR Dark"
+              className="max-w-[100px] sm:max-w-[150px] hidden dark:block"
             />
           </div>
         </Link>

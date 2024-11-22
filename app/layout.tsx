@@ -4,17 +4,11 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-// import { ArweaveWalletKit } from "arweave-wallet-kit";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const fractul = localFont({
+  src: "./fonts/Fractul-Regular.woff",
+  variable: "--font-fractul",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -30,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fractul.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"
@@ -38,11 +32,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* <ArweaveWalletKit > */}
             <Navigation />
             <main>{children}</main>
             <Toaster />
-          {/* </ArweaveWalletKit> */}
         </ThemeProvider>
       </body>
     </html>
