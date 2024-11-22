@@ -13,18 +13,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, MapPin, Search, Users, Wallet } from "lucide-react";
+import { Calendar, MapPin, QrCode, Search, Users } from "lucide-react";
 import { createDataItemSigner, dryrun, message } from "@permaweb/aoconnect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { QrCodeDialog } from "@/components/ui/qr-code-dialog";
+import QRCode from "qrcode";
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [events, setEvents] = useState<any[]>([]);
-  console.log(events);
   const [isLoading, setIsLoading] = useState(true);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [registrationData, setRegistrationData] = useState<any>(null);
   const { toast } = useToast();
+
+  console.log(events);
 
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -41,7 +48,7 @@ export default function EventsPage() {
         const allEvents = result.Messages[0].Tags[4].value.map(
           (event: any) => ({
             ...event,
-            active: event.active === "true", // Convert active property to a boolean
+            active: event.active === "true",
           })
         );
 
@@ -59,7 +66,6 @@ export default function EventsPage() {
     }
     getEvents();
 
-    // Check wallet connection
     async function checkWallet() {
       try {
         const addr = await window.arweaveWallet.getActiveAddress();
@@ -118,7 +124,6 @@ export default function EventsPage() {
           title: "Paid Ticket",
           description: `Event requires payment. Implement payment logic here.`,
         });
-        // Add the logic for handling payment here
       }
 
       async function getEvents() {
@@ -142,6 +147,33 @@ export default function EventsPage() {
       getEvents();
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const handleShowQRCode = async (event: any) => {
+    setSelectedEvent(event);
+    try {
+      const data = {
+        eventId: event.id,
+        eventTitle: event.title,
+        walletAddress,
+        registrationType: event.ticketPrice === "0" ? "free" : "paid",
+        registrationDate: event.timestamp,
+        location: event.location,
+        date: event.date,
+      };
+
+      const qrCodeData = await QRCode.toDataURL(JSON.stringify(data));
+      setQrCodeUrl(qrCodeData);
+      setRegistrationData(data);
+      setIsQrDialogOpen(true);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate QR code",
+        variant: "destructive",
+      });
     }
   };
 
@@ -189,84 +221,93 @@ export default function EventsPage() {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <Card key={event.id} className="overflow-hidden">
-              <div className="relative h-48">
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              </div>
-              <CardHeader>
-                <CardTitle>{event.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {new Date(event.date).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    {event.location}
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    {event.noOfRegistrations} registered
-                  </div>
+          {filteredEvents.map((event) => {
+            const isRegistered =
+              event.ticketPrice !== "0"
+                ? event.paidUsers &&
+                  event.paidUsers.some(
+                    (wallet: string) =>
+                      wallet.toLowerCase() === walletAddress?.toLowerCase()
+                  )
+                : event.registeredUsers &&
+                  event.registeredUsers.some(
+                    (wallet: string) =>
+                      wallet.toLowerCase() === walletAddress?.toLowerCase()
+                  );
+
+            return (
+              <Card key={event.id} className="overflow-hidden">
+                <div className="relative h-48">
+                  <img
+                    src={event.image}
+                    alt={event.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <span className="font-semibold">
-                  {event.ticketPrice === "0" ? "Free" : `$EPR ${event.ticketPrice}`}
-                </span>
-                <Button
-                  disabled={
-                    !event.active ||
-                    (event.ticketPrice !== "0"
-                      ? event.paidUsers &&
-                        event.paidUsers.some(
-                          (wallet: string) =>
-                            wallet.toLowerCase() ===
-                            walletAddress?.toLowerCase()
-                        )
-                      : event.registeredUsers &&
-                        event.registeredUsers.some(
-                          (wallet: string) =>
-                            wallet.toLowerCase() ===
-                            walletAddress?.toLowerCase()
-                        ))
-                  }
-                  className="disabled:opacity-85"
-                  onClick={() => handleGetTickets(event.id, event.ticketPrice)}
-                >
-                  {!event.active
-                    ? "Event Inactive"
-                    : event.ticketPrice !== "0"
-                    ? event.paidUsers &&
-                      event.paidUsers.some(
-                        (wallet: string) =>
-                          wallet.toLowerCase() === walletAddress?.toLowerCase()
-                      )
-                      ? "Already paid"
-                      : "Register"
-                    : event.registeredUsers &&
-                      event.registeredUsers.some(
-                        (wallet: string) =>
-                          wallet.toLowerCase() === walletAddress?.toLowerCase()
-                      )
-                    ? "Already registered"
-                    : "Register"}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardHeader>
+                  <CardTitle>{event.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {new Date(event.date).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      {event.location}
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="mr-2 h-4 w-4" />
+                      {event.noOfRegistrations} registered
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center w-full">
+                    <span className="font-semibold">
+                      {event.ticketPrice === "0" ? "Free" : `$EPR ${event.ticketPrice}`}
+                    </span>
+                    <Button
+                      disabled={!event.active || isRegistered}
+                      className="disabled:opacity-85"
+                      onClick={() => handleGetTickets(event.id, event.ticketPrice)}
+                    >
+                      {!event.active
+                        ? "Event Inactive"
+                        : isRegistered
+                        ? "Already registered"
+                        : "Register"}
+                    </Button>
+                  </div>
+                  {isRegistered && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleShowQRCode(event)}
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Show QR Code
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
+      )}
+
+      {registrationData && (
+        <QrCodeDialog
+          isOpen={isQrDialogOpen}
+          onOpenChange={setIsQrDialogOpen}
+          qrCodeUrl={qrCodeUrl}
+          registrationData={registrationData}
+        />
       )}
     </div>
   );
