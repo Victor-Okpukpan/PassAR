@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <section className="flex-1 relative">
-        <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-[url('/hero.webp')] bg-cover bg-center">
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="relative container mx-auto px-4 py-32">
@@ -51,7 +51,7 @@ export default function Home() {
                 Decentralized & Permanent
               </h3>
               <p className="text-muted-foreground">
-                All event data and tickets are stored on Arweave,
+                All event data are stored on Arweave,
                 ensuring transparency and immutability.
               </p>
             </div>
@@ -59,10 +59,9 @@ export default function Home() {
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Ticket className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Verifiable Tickets</h3>
+              <h3 className="text-xl font-semibold mb-2">Verifiable QR Generated Tickets</h3>
               <p className="text-muted-foreground">
-                Each ticket is a unique digital asset that can be easily
-                verified and transferred securely.
+                Each ticket is uniquely generated from your verified registration details on AO.
               </p>
             </div>
             <div className="bg-background p-6 rounded-lg shadow-lg">
