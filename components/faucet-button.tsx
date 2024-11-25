@@ -8,7 +8,7 @@ export function FaucetButton() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const PASS_FAUCET_PROCESS = "2IFd1BAe18Lrr30d8FnNrzXvKoZzUhWVuQFgTH7yrXk";
+  const PASS_FAUCET_PROCESS = "H6t64aNqjYskenV57N7xjyL0hoAVu05CsWztuWxLyuQ";
 
   const claimFromFaucet = async () => {
     setIsLoading(true);

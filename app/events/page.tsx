@@ -37,8 +37,8 @@ export default function EventsPage() {
   const [registrationData, setRegistrationData] = useState<any>(null);
   const { toast } = useToast();
 
-  const AO_PROCESS = "ijdhVu_HrhR8SvsosfjQ3LoYfsEClg2mQ4g64D2t2MA";
-  const PASS_TOKEN_PROCESS = "6zfJ9Lw6e3mIAnwLt5JlnglLMF1kEQnhSPjmLDGC5ag";
+  const AO_PROCESS = "yr6ytHmqw_WSOnDZSNjyin6D0SSt2LvlKEB4dYqOabg";
+  const PASS_TOKEN_PROCESS = "APgPW8AVfANq2dzTLjuEI_8VT4i67ms47S9e1kPyjec";
 
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())

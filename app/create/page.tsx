@@ -55,7 +55,7 @@ export default function CreateEventPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
 
-  const AO_PROCESS = "ijdhVu_HrhR8SvsosfjQ3LoYfsEClg2mQ4g64D2t2MA";
+  const AO_PROCESS = "yr6ytHmqw_WSOnDZSNjyin6D0SSt2LvlKEB4dYqOabg";
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
