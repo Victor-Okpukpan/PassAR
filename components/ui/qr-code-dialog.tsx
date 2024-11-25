@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+// import { Separator } from "@/components/ui/separator";
 import { Ticket } from "lucide-react";
-import { format } from "date-fns";
+// import { format } from "date-fns";
 
 interface QrCodeDialogProps {
   isOpen: boolean;
@@ -55,11 +55,11 @@ export function QrCodeDialog({
               </Badge>
             </div>
 
-            <Separator />
+            {/* <Separator />
 
             <div className="text-xs text-center text-muted-foreground">
-              <p>Registered on {format(new Date(registrationData.registrationDate), "PPP 'at' p")}</p>
-            </div>
+              <p>Registered on {format(new Date(registrationData.registrationDate).toISOString(), "PPP 'at' p")}</p>
+            </div> */}
           </div>
         </div>
       </DialogContent>

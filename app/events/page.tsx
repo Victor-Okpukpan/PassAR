@@ -207,6 +207,7 @@ export default function EventsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">Upcoming Events</h1>
+        <div className="flex items-center space-x-2">
         <div className="flex justify-end">
           <FaucetButton />
         </div>
@@ -218,6 +219,7 @@ export default function EventsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
+        </div>
         </div>
       </div>
 
