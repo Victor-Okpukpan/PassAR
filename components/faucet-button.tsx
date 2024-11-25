@@ -1,35 +1,34 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Droplets } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { createDataItemSigner, message, result } from '@permaweb/aoconnect';
+import { createDataItemSigner, message, result } from "@permaweb/aoconnect";
 
 export function FaucetButton() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const PASS_FAUCET_PROCESS = "2IFd1BAe18Lrr30d8FnNrzXvKoZzUhWVuQFgTH7yrXk";
+
   const claimFromFaucet = async () => {
     setIsLoading(true);
     try {
-        const messageId = await message({
-            process: process.env.NEXT_PUBLIC_FAUCET_PROCESS!,
-            tags: [
-              { name: "Action", value: "ClaimToken" },
-             
-            ],
-            signer: createDataItemSigner(window.arweaveWallet),
-          });
-    
-          const _result = await result({
-            message: messageId,
-            process: process.env.NEXT_PUBLIC_FAUCET_PROCESS!,
-          });
-    
-          console.log(_result);
-      
+      const messageId = await message({
+        process: PASS_FAUCET_PROCESS,
+        tags: [{ name: "Action", value: "ClaimToken" }],
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+
+      const _result = await result({
+        message: messageId,
+        process: PASS_FAUCET_PROCESS,
+      });
+
+      console.log(_result);
+
       toast({
         title: "Tokens Claimed Successfully",
-        description: "Some  $PASS tokens have been added to your wallet",
+        description: "Some $PASS tokens have been added to your wallet",
       });
     } catch (error) {
       toast({

@@ -14,11 +14,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Calendar, MapPin, QrCode, Search, Users } from "lucide-react";
-import { createDataItemSigner, dryrun, message } from "@permaweb/aoconnect";
+import {
+  createDataItemSigner,
+  dryrun,
+  message,
+  result,
+} from "@permaweb/aoconnect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { QrCodeDialog } from "@/components/ui/qr-code-dialog";
 import QRCode from "qrcode";
+import { FaucetButton } from "@/components/faucet-button";
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,7 +37,8 @@ export default function EventsPage() {
   const [registrationData, setRegistrationData] = useState<any>(null);
   const { toast } = useToast();
 
-  console.log(events);
+  const AO_PROCESS = "ijdhVu_HrhR8SvsosfjQ3LoYfsEClg2mQ4g64D2t2MA";
+  const PASS_TOKEN_PROCESS = "6zfJ9Lw6e3mIAnwLt5JlnglLMF1kEQnhSPjmLDGC5ag";
 
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -41,7 +48,7 @@ export default function EventsPage() {
     async function getEvents() {
       try {
         const result = await dryrun({
-          process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+          process: AO_PROCESS,
           tags: [{ name: "Action", value: "GetEvents" }],
         });
 
@@ -96,7 +103,7 @@ export default function EventsPage() {
     try {
       if (ticketPrice === "0") {
         const messageId = await message({
-          process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+          process: AO_PROCESS,
           tags: [
             { name: "Action", value: "RegisterForEvent" },
             { name: "EventId", value: id.toString() },
@@ -109,27 +116,46 @@ export default function EventsPage() {
           description: `Message Id: ${messageId}`,
         });
       } else {
-        const messageId = await message({
-          process: process.env.NEXT_PUBLIC_TOKEN_PROCESS!,
-          tags: [
-            { name: "Action", value: "Transfer" },
-            { name: "Quantity", value: convertTo12Decimals(ticketPrice) },
-            { name: "Recipient", value: process.env.NEXT_PUBLIC_AO_PROCESS! },
-            { name: "X-EventId", value: id.toString() },
-          ],
-          signer: createDataItemSigner(window.arweaveWallet),
-        });
+        try {
+          const messageId = await message({
+            process: PASS_TOKEN_PROCESS,
+            tags: [
+              { name: "Action", value: "Transfer" },
+              { name: "Quantity", value: convertTo12Decimals(ticketPrice) },
+              { name: "Recipient", value: AO_PROCESS },
+              { name: "X-EventId", value: id.toString() },
+            ],
+            signer: createDataItemSigner(window.arweaveWallet),
+          });
 
-        toast({
-          title: "Paid Ticket",
-          description: `Event requires payment. Implement payment logic here.`,
-        });
+          const _result = await result({
+            message: messageId,
+            process: PASS_TOKEN_PROCESS,
+          });
+
+          console.log(_result.Messages[0].Tags[4].name);
+          if (_result.Messages[0].Tags[4].name === "Error") {
+            throw new Error(`${_result.Messages[0].Tags[4].value}`);
+          }
+
+          toast({
+            title: "You have paid for this event!",
+            description: `Message ID: ${messageId}`,
+          });
+        } catch (error) {
+          toast({
+            title: "Error paying for event",
+            description: `Make sure you have some $PASS tokens.`,
+            variant: "destructive",
+          });
+          console.log(error);
+        }
       }
 
       async function getEvents() {
         try {
           const result = await dryrun({
-            process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+            process: AO_PROCESS,
             tags: [{ name: "Action", value: "GetEvents" }],
           });
           setEvents(result.Messages[0].Tags[4].value);
@@ -181,6 +207,9 @@ export default function EventsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">Upcoming Events</h1>
+        <div className="flex justify-end">
+          <FaucetButton />
+        </div>
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -263,19 +292,26 @@ export default function EventsPage() {
                     </div>
                     <div className="flex items-center">
                       <Users className="mr-2 h-4 w-4" />
-                      {event.noOfRegistrations} registered
+                      {event.ticketPrice !== "0"
+                        ? event.paidUsers.length
+                        : event.noOfRegistrations}{" "}
+                      registered
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
                   <div className="flex justify-between items-center w-full">
                     <span className="font-semibold">
-                      {event.ticketPrice === "0" ? "Free" : `$EPR ${event.ticketPrice}`}
+                      {event.ticketPrice === "0"
+                        ? "Free"
+                        : `${event.ticketPrice} $PASS`}
                     </span>
                     <Button
                       disabled={!event.active || isRegistered}
                       className="disabled:opacity-85"
-                      onClick={() => handleGetTickets(event.id, event.ticketPrice)}
+                      onClick={() =>
+                        handleGetTickets(event.id, event.ticketPrice)
+                      }
                     >
                       {!event.active
                         ? "Event Inactive"

@@ -55,6 +55,8 @@ export default function CreateEventPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
 
+  const AO_PROCESS = "ijdhVu_HrhR8SvsosfjQ3LoYfsEClg2mQ4g64D2t2MA";
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -83,7 +85,6 @@ export default function CreateEventPage() {
       transaction.addTag("Content-Type", file.type);
       transaction.addTag("App-Name", "PassAR");
 
-      // In production, you would sign the transaction with the user's wallet
       await arweave.transactions.sign(transaction);
       await arweave.transactions.post(transaction);
       console.log(`https://arweave.net/${transaction.id}`);
@@ -166,7 +167,7 @@ export default function CreateEventPage() {
       };
 
       const messageId = await message({
-        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+        process: AO_PROCESS,
         tags: [
           { name: "Action", value: "AddNewEventT" },
           { name: "EventTitle", value: eventData.title },
@@ -181,7 +182,7 @@ export default function CreateEventPage() {
 
       const _result = await result({
         message: messageId,
-        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+        process: AO_PROCESS,
       });
 
       console.log(_result);
@@ -371,7 +372,7 @@ export default function CreateEventPage() {
 
           {!isFree && (
             <div className="space-y-2">
-              <Label htmlFor="price">Ticket Price (USD)</Label>
+              <Label htmlFor="price">Ticket Price ($PASS)</Label>
               <Input
                 id="price"
                 type="number"

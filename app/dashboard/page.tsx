@@ -12,12 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, MapPin, Plus, Users, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Plus, Users, Loader2, Wallet } from "lucide-react";
 import Link from "next/link";
 import {
   createDataItemSigner,
   dryrun,
   message,
+  result,
 } from "@permaweb/aoconnect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -39,20 +40,23 @@ export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const { toast } = useToast();
+
+  const AO_PROCESS = "ijdhVu_HrhR8SvsosfjQ3LoYfsEClg2mQ4g64D2t2MA";
 
   useEffect(() => {
     async function getEvents() {
       try {
         const result = await dryrun({
-          process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+          process: AO_PROCESS,
           tags: [{ name: "Action", value: "GetEvents" }],
         });
         const allEvents = result.Messages[0].Tags[4].value;
         const connectedWalletAddress =
           await window.arweaveWallet.getActiveAddress();
 
-          const filteredEvents = allEvents
+        const filteredEvents = allEvents
           .filter(
             (event: any) =>
               event.creator.toLowerCase() ===
@@ -83,7 +87,7 @@ export default function DashboardPage() {
     setIsUpdating(true);
     try {
       const messageId = await message({
-        process: process.env.NEXT_PUBLIC_AO_PROCESS!,
+        process: AO_PROCESS,
         tags: [
           { name: "Action", value: "ModifyEventStatus" },
           { name: "EventId", value: event.id.toString() },
@@ -116,6 +120,46 @@ export default function DashboardPage() {
     }
   };
 
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      const messageId = await message({
+        process: AO_PROCESS,
+        tags: [{ name: "Action", value: "WithdrawBalance" }],
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+
+      const _result = await result({
+        message: messageId,
+        process: AO_PROCESS,
+      });
+
+      toast({
+        title: "Success",
+        description: `${_result.Messages[1].Data}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to withdraw balance. Please try again later.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  const totalBalance = events.reduce((sum, event) => {
+    // Add based on the ticket price
+    const registrations =
+      event.ticketPrice !== "0"
+        ? event.paidUsers.length
+        : event.noOfRegistrations;
+
+    return sum + registrations;
+  }, 0);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -125,12 +169,28 @@ export default function DashboardPage() {
             Manage your events and track ticket sales
           </p>
         </div>
-        <Link href="/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Event
-          </Button>
-        </Link>
+        <div className="flex gap-4">
+          {totalBalance > 0 && (
+            <Button
+              onClick={handleWithdraw}
+              disabled={isWithdrawing}
+              variant="outline"
+            >
+              {isWithdrawing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Wallet className="mr-2 h-4 w-4" />
+              )}
+              Withdraw
+            </Button>
+          )}
+          <Link href="/create">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Event
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -213,13 +273,18 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    {event.noOfRegistrations} registered
+                    {event.ticketPrice !== "0"
+                      ? event.paidUsers.length
+                      : event.noOfRegistrations}{" "}
+                    registered
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <span className="font-semibold">
-                  {event.ticketPrice === "0" ? "Free" : `$${event.ticketPrice}`}
+                  {event.ticketPrice === "0"
+                    ? "Free"
+                    : `${event.ticketPrice} $PASS`}
                 </span>
                 <Button
                   variant="outline"
