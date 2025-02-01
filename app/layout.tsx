@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navigation } from "@/components/navigation";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { Footer } from "@/components/footer";
 
 const fractul = localFont({
   src: "./fonts/Fractul-Regular.woff",
@@ -34,6 +35,7 @@ export default function RootLayout({
         >
             <Navigation />
             <main>{children}</main>
+            {/* <Footer /> */}
             <Toaster />
         </ThemeProvider>
       </body>

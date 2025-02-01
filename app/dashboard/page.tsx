@@ -32,15 +32,17 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<any[]>([]);
-  console.log(events);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawingEventId, setWithdrawingEventId] = useState<number | null>(
+    null
+  );
   const { toast } = useToast();
 
   const AO_PROCESS = "yr6ytHmqw_WSOnDZSNjyin6D0SSt2LvlKEB4dYqOabg";
@@ -71,7 +73,7 @@ export default function DashboardPage() {
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to fetch events. Please try again later.",
+          description: "Failed to fetch events. Make sure your wallet is connected then try again.",
           variant: "destructive",
         });
         console.error(error);
@@ -96,14 +98,13 @@ export default function DashboardPage() {
         signer: createDataItemSigner(window.arweaveWallet),
       });
 
-      // Update local state
       setEvents(
         events.map((e) => (e.id === event.id ? { ...e, active: !e.active } : e))
       );
 
       toast({
         title: "Success",
-        description: `Event status has been ${
+        description: `Event has been ${
           !event.active ? "activated" : "deactivated"
         }`,
       });
@@ -120,12 +121,15 @@ export default function DashboardPage() {
     }
   };
 
-  const handleWithdraw = async () => {
-    setIsWithdrawing(true);
+  const handleWithdraw = async (eventId: number) => {
+    setWithdrawingEventId(eventId);
     try {
       const messageId = await message({
         process: AO_PROCESS,
-        tags: [{ name: "Action", value: "WithdrawBalance" }],
+        tags: [
+          { name: "Action", value: "WithdrawBalance" },
+          { name: "EventId", value: eventId.toString() },
+        ],
         signer: createDataItemSigner(window.arweaveWallet),
       });
 
@@ -146,19 +150,85 @@ export default function DashboardPage() {
       });
       console.error(error);
     } finally {
-      setIsWithdrawing(false);
+      setWithdrawingEventId(null);
     }
   };
 
-  const totalBalance = events.reduce((sum, event) => {
-    // Add based on the ticket price
-    const registrations =
-      event.ticketPrice !== "0"
-        ? event.paidUsers.length
-        : event.noOfRegistrations;
+  const activeEvents = events.filter((event) => event.active);
+  const inactiveEvents = events.filter((event) => !event.active);
 
-    return sum + registrations;
-  }, 0);
+  const EventCard = ({ event }: { event: any }) => (
+    <Card key={event.id} className="overflow-hidden">
+      <div className="relative h-48">
+        <img
+          src={event.image || "/placeholder.svg"}
+          alt={event.title}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute top-2 right-2">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              event.active
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {event.active ? "Active" : "Completed"}
+          </span>
+        </div>
+      </div>
+      <CardHeader>
+        <CardTitle>{event.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center">
+            <Calendar className="mr-2 h-4 w-4" />
+            {new Date(event.date).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}
+          </div>
+          <div className="flex items-center">
+            <MapPin className="mr-2 h-4 w-4" />
+            {event.location}
+          </div>
+          <div className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            {event.ticketPrice !== "0"
+              ? event.paidUsers.length
+              : event.noOfRegistrations}{" "}
+            registered
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col gap-2">
+        <div className="flex justify-between items-center w-full">
+          <span className="font-semibold">
+            {event.ticketPrice === "0" ? "Free" : `${event.ticketPrice} $PASS`}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedEvent(event);
+              setIsDialogOpen(true);
+            }}
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Manage Event"
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -169,28 +239,12 @@ export default function DashboardPage() {
             Manage your events and track ticket sales
           </p>
         </div>
-        <div className="flex gap-4">
-          {totalBalance > 0 && (
-            <Button
-              onClick={handleWithdraw}
-              disabled={isWithdrawing}
-              variant="outline"
-            >
-              {isWithdrawing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Wallet className="mr-2 h-4 w-4" />
-              )}
-              Withdraw
-            </Button>
-          )}
-          <Link href="/create">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Event
-            </Button>
-          </Link>
-        </div>
+        <Link href="/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Event
+          </Button>
+        </Link>
       </div>
 
       {isLoading ? (
@@ -233,80 +287,26 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <Card key={event.id} className="overflow-hidden">
-              <div className="relative h-48">
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      event.active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {event.active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-              </div>
-              <CardHeader>
-                <CardTitle>{event.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {new Date(event.date).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    {event.location}
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    {event.ticketPrice !== "0"
-                      ? event.paidUsers.length
-                      : event.noOfRegistrations}{" "}
-                    registered
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <span className="font-semibold">
-                  {event.ticketPrice === "0"
-                    ? "Free"
-                    : `${event.ticketPrice} $PASS`}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedEvent(event);
-                    setIsDialogOpen(true);
-                  }}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    "Manage Event"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="active">Active Events</TabsTrigger>
+            <TabsTrigger value="inactive">Completed Events</TabsTrigger>
+          </TabsList>
+          <TabsContent value="active">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {activeEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          </TabsContent>
+          <TabsContent value="inactive">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {inactiveEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -329,7 +329,7 @@ export default function DashboardPage() {
                     onCheckedChange={() => handleStatusUpdate(selectedEvent)}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {selectedEvent.active ? "Active" : "Inactive"}
+                    {selectedEvent.active ? "Active" : "Completed"}
                   </span>
                 </div>
               </div>
@@ -339,6 +339,21 @@ export default function DashboardPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Close
             </Button>
+            {selectedEvent && selectedEvent.ticketPrice !== "0" && (
+              <Button
+                onClick={() => handleWithdraw(selectedEvent.id)}
+                disabled={withdrawingEventId === selectedEvent.id}
+                variant="secondary"
+                className="w-full"
+              >
+                {withdrawingEventId === selectedEvent.id ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Wallet className="mr-2 h-4 w-4 hidden md:block" />
+                )}
+                Withdraw <span className="hidden md:block">Funds</span>
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

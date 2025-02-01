@@ -44,7 +44,7 @@ export function Navigation() {
               <Button variant="ghost">Browse Events</Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="ghost">Creator Dashboard</Button>
+              <Button variant="ghost">Dashboard</Button>
             </Link>
           </div>
           <ModeToggle />
@@ -60,7 +60,7 @@ export function Navigation() {
                 <Link href="/events">Browse Events</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard">Creator Dashboard</Link>
+                <Link href="/dashboard">Dashboard</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -22,7 +22,10 @@ import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
 import Arweave from "arweave";
 import { useRouter } from "next/navigation";
-import { FaucetButton } from "@/components/faucet-button";
+// import { FaucetButton } from "@/components/faucet-button";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { DatePickerC } from "@/components/date-picker";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -34,36 +37,61 @@ interface FormErrors {
   title?: string;
   description?: string;
   date?: string;
+  time?: string;
   location?: string;
   price?: string;
   image?: string;
+  googleMapLink?: string;
+  virtualLink?: string;
 }
 
 export default function CreateEventPage() {
+  const WAR_TOKEN_PROCESS = "xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10";
+  // const DUMDUM_TOKEN_PROCESS = "jtGHIv6MRIwUSlxVUTDwX7X0gYEGKQynIqvkelIOdL4";
+
   const router = useRouter();
   const [date, setDate] = useState<Date>();
-  const [isFree, setIsFree] = useState(false);
+  const [eventTime, setEventTime] = useState<string>("");
+  console.log(eventTime);
+  const [isFree, setIsFree] = useState(true);
+  const [isLiveEvent, setIsLiveEvent] = useState(true);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageHash, setImageHash] = useState<string | null>(null);
+  const [imageHash, setImageHash] = useState<string | null>("");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [googleMapLink, setGoogleMapLink] = useState("");
+  const [virtualLink, setVirtualLink] = useState("");
   const [price, setPrice] = useState("");
+  const [token, setToken] = useState("$wAR");
+  const [process, setProcess] = useState(WAR_TOKEN_PROCESS);
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
 
   const AO_PROCESS = "yr6ytHmqw_WSOnDZSNjyin6D0SSt2LvlKEB4dYqOabg";
+
+  useEffect(() => {
+    if (token === "$wAR") {
+      setProcess(WAR_TOKEN_PROCESS);
+    } 
+    
+    // else if (token === "$DUMDUM") {
+    //   setProcess(DUMDUM_TOKEN_PROCESS);
+    // }
+  }, [token]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
     if (!title.trim()) newErrors.title = "Event title is required";
     if (!description.trim()) newErrors.description = "Description is required";
-    if (!date) newErrors.date = "Event date is required";
-    if (!location.trim()) newErrors.location = "Location is required";
+    if (!date) newErrors.date = "Event date and time are required";
+    if (!eventTime) newErrors.time = "Event time is required";
+
+    if (!virtualLink && !location.trim()) newErrors.location = "Location is required";
 
     if (!isFree) {
       const priceNum = Number(price);
@@ -73,6 +101,14 @@ export default function CreateEventPage() {
     }
 
     if (!imageHash) newErrors.image = "Event image is required";
+
+    if (isLiveEvent && googleMapLink && !googleMapLink.trim()) {
+      newErrors.googleMapLink = "Google Map link is required for live events";
+    }
+
+    if (!isLiveEvent && !virtualLink.trim()) {
+      newErrors.virtualLink = "Virtual link is required for virtual events";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -159,12 +195,18 @@ export default function CreateEventPage() {
       const eventData = {
         title,
         description,
-        date: date!.toISOString(),
+        date: date!.toISOString().slice(0, 10),
+        time: `${eventTime}z`,
         location,
+        googleMapLink,
+        virtualLink,
         isFree,
         price: isFree ? "0" : String(price),
+        process: isFree ? "" : process,
         imageHash,
       };
+
+      console.log("e:", eventData);
 
       const messageId = await message({
         process: AO_PROCESS,
@@ -173,9 +215,13 @@ export default function CreateEventPage() {
           { name: "EventTitle", value: eventData.title },
           { name: "EventDescription", value: eventData.description },
           { name: "EventDate", value: eventData.date },
+          { name: "EventTime", value: eventData.time },
           { name: "Location", value: eventData.location },
           { name: "TicketPrice", value: eventData.price },
           { name: "ImageUrl", value: eventData.imageHash as string },
+          { name: "GoogleMapLink", value: eventData.googleMapLink },
+          { name: "VirtualLink", value: eventData.virtualLink },
+          { name: "PaymentTokenProcessID", value: eventData.process },
         ],
         signer: createDataItemSigner(window.arweaveWallet),
       });
@@ -196,15 +242,19 @@ export default function CreateEventPage() {
       setTitle("");
       setDescription("");
       setDate(undefined);
+      setEventTime("");
       setLocation("");
+      setGoogleMapLink("");
+      setVirtualLink("");
       setPrice("");
-      setIsFree(false);
+      setIsFree(true);
+      setIsLiveEvent(true);
       removeImage();
       router.push("/dashboard");
     } catch (error: any) {
       toast({
         title: "Failed to create event",
-        description: error.message,
+        description: "Check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -218,9 +268,9 @@ export default function CreateEventPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Create New Event</h1>
 
-          <div className="flex justify-end">
+          {/* <div className="flex justify-end">
             <FaucetButton />
-          </div>
+          </div> */}
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
@@ -335,7 +385,18 @@ export default function CreateEventPage() {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={(selectedDate) => {
+                    if (!selectedDate) return;
+                    
+                    // Convert to UTC at 00:00:00
+                    const utcDate = new Date(Date.UTC(
+                      selectedDate.getFullYear(),
+                      selectedDate.getMonth(),
+                      selectedDate.getDate()
+                    ));
+                  
+                    setDate(utcDate); // Save as UTC
+                  }}
                   initialFocus
                   disabled={(date) => date < new Date()}
                 />
@@ -347,18 +408,111 @@ export default function CreateEventPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="eventTime">Event Time</Label>
             <Input
-              id="location"
-              placeholder="Event location or virtual link"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className={errors.location ? "border-destructive" : ""}
+              id="eventTime"
+              type="time"
+              value={(() => {
+                if (!eventTime) return ""; // Handle empty state
+              
+                const today = new Date();
+                const [hours, minutes] = eventTime.split(":").map(Number);
+              
+                // Create a UTC date object
+                const utcDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes));
+              
+                // Convert to local time
+                const localTime = utcDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+              
+                return localTime;
+              })()}
+              onChange={(e) => {
+                const localTime = e.target.value; // This is in local time format (HH:mm)
+                const today = new Date(); // Get today's date
+                const [hours, minutes] = localTime.split(":").map(Number);
+
+                // Create a Date object with local time
+                const localDate = new Date(
+                  today.getFullYear(),
+                  today.getMonth(),
+                  today.getDate(),
+                  hours,
+                  minutes
+                );
+
+                // Convert to UTC string
+                const utcTime = localDate
+                  .toISOString()
+                  .split("T")[1]
+                  .substring(0, 5); // Extract HH:mm in UTC
+
+                setEventTime(utcTime);
+              }}
+              className={errors.time ? "border-destructive" : ""}
             />
-            {errors.location && (
-              <p className="text-sm text-destructive">{errors.location}</p>
+            {errors.time && (
+              <p className="text-sm text-destructive">{errors.time}</p>
             )}
           </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Live Event</Label>
+              <div className="text-sm text-muted-foreground">
+                Toggle if this is a live event
+              </div>
+            </div>
+            <Switch checked={isLiveEvent} onCheckedChange={setIsLiveEvent} />
+          </div>
+
+          {isLiveEvent ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="Event location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className={errors.location ? "border-destructive" : ""}
+                />
+                {errors.location && (
+                  <p className="text-sm text-destructive">{errors.location}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleMapLink">
+                  Google Map Link (Optional)
+                </Label>
+                <Input
+                  id="googleMapLink"
+                  placeholder="Google Map link"
+                  value={googleMapLink}
+                  onChange={(e) => setGoogleMapLink(e.target.value)}
+                  className={errors.googleMapLink ? "border-destructive" : ""}
+                />
+                {errors.googleMapLink && (
+                  <p className="text-sm text-destructive">
+                    {errors.googleMapLink}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="virtualLink">Virtual Link</Label>
+              <Input
+                id="virtualLink"
+                placeholder="Virtual event link"
+                value={virtualLink}
+                onChange={(e) => setVirtualLink(e.target.value)}
+                className={errors.virtualLink ? "border-destructive" : ""}
+              />
+              {errors.virtualLink && (
+                <p className="text-sm text-destructive">{errors.virtualLink}</p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -371,22 +525,38 @@ export default function CreateEventPage() {
           </div>
 
           {!isFree && (
-            <div className="space-y-2">
-              <Label htmlFor="price">Ticket Price ($PASS)</Label>
-              <Input
-                id="price"
-                type="number"
-                placeholder="Enter ticket price"
-                step="0.01"
-                min="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className={errors.price ? "border-destructive" : ""}
-              />
-              {errors.price && (
-                <p className="text-sm text-destructive">{errors.price}</p>
-              )}
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="price">Ticket Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  placeholder="Enter ticket price"
+                  step="0.01"
+                  min="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className={errors.price ? "border-destructive" : ""}
+                />
+                {errors.price && (
+                  <p className="text-sm text-destructive">{errors.price}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="token">Select Token</Label>
+                <select
+                  id="token"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value="$wAR" selected>
+                    $wAR
+                  </option>
+                  {/* <option value="$DUMDUM">$DUMDUM</option> */}
+                </select>
+              </div>
+            </>
           )}
 
           <Button

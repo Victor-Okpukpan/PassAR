@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -24,7 +24,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { QrCodeDialog } from "@/components/ui/qr-code-dialog";
 import QRCode from "qrcode";
-import { FaucetButton } from "@/components/faucet-button";
+import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +44,9 @@ export default function EventsPage() {
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const upcomingEvents = filteredEvents.filter((event) => event.active);
+  const completedEvents = filteredEvents.filter((event) => !event.active);
 
   useEffect(() => {
     async function getEvents() {
@@ -86,7 +90,7 @@ export default function EventsPage() {
   }, [toast]);
 
   const convertTo12Decimals = (value: string): string => {
-    const numericValue = parseFloat(value);
+    const numericValue = Number.parseFloat(value);
     const multipliedValue = numericValue * 10 ** 12;
     return multipliedValue.toFixed(0);
   };
@@ -152,25 +156,12 @@ export default function EventsPage() {
         }
       }
 
-      async function getEvents() {
-        try {
-          const result = await dryrun({
-            process: AO_PROCESS,
-            tags: [{ name: "Action", value: "GetEvents" }],
-          });
-          setEvents(result.Messages[0].Tags[4].value);
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to fetch events. Please try again later.",
-            variant: "destructive",
-          });
-          console.log(error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-      getEvents();
+      // Refresh events after registration
+      const _result = await dryrun({
+        process: AO_PROCESS,
+        tags: [{ name: "Action", value: "GetEvents" }],
+      });
+      setEvents(_result.Messages[0].Tags[4].value);
     } catch (error) {
       console.log(error);
     }
@@ -203,14 +194,77 @@ export default function EventsPage() {
     }
   };
 
+  const renderEventCard = (event: any) => {
+    const isRegistered =
+      event.ticketPrice !== "0"
+        ? event.paidUsers &&
+          event.paidUsers.some(
+            (wallet: string) =>
+              wallet.toLowerCase() === walletAddress?.toLowerCase()
+          )
+        : event.registeredUsers &&
+          event.registeredUsers.some(
+            (wallet: string) =>
+              wallet.toLowerCase() === walletAddress?.toLowerCase()
+          );
+
+    return (
+      <Card key={event.id} className="overflow-hidden">
+        <div className="relative h-48">
+          <img
+            src={event.image || "/placeholder.svg"}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
+        <CardHeader>
+          <CardTitle>{event.title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <Calendar className="mr-2 h-4 w-4" />
+              {new Date(event.date).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </div>
+            <div className="flex items-center">
+              <MapPin className="mr-2 h-4 w-4" />
+              {event.location}
+            </div>
+            <div className="flex items-center">
+              <Users className="mr-2 h-4 w-4" />
+              {event.ticketPrice !== "0"
+                ? event.paidUsers.length
+                : event.noOfRegistrations}{" "}
+              registered
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-2">
+          <div className="flex justify-between items-center w-full">
+            <span className="font-semibold">
+              {event.ticketPrice === "0"
+                ? "Free"
+                : `${event.ticketPrice} $PASS`}
+            </span>
+
+            <Link href={`/events/${event.id}`}>
+              <Button>View More</Button>
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold">Upcoming Events</h1>
-        <div className="flex items-center space-x-2">
-        <div className="flex justify-end">
-          <FaucetButton />
-        </div>
+        <h1 className="text-3xl font-bold">Events</h1>
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -220,124 +274,90 @@ export default function EventsPage() {
             className="pl-10"
           />
         </div>
-        </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-48" />
-              <CardHeader>
-                <Skeleton className="h-8 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <Card className="p-8 text-center">
-          <CardContent>
-            <p className="text-muted-foreground">No events found</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => {
-            const isRegistered =
-              event.ticketPrice !== "0"
-                ? event.paidUsers &&
-                  event.paidUsers.some(
-                    (wallet: string) =>
-                      wallet.toLowerCase() === walletAddress?.toLowerCase()
-                  )
-                : event.registeredUsers &&
-                  event.registeredUsers.some(
-                    (wallet: string) =>
-                      wallet.toLowerCase() === walletAddress?.toLowerCase()
-                  );
-
-            return (
-              <Card key={event.id} className="overflow-hidden">
-                <div className="relative h-48">
-                  <img
-                    src={event.image}
-                    alt={event.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle>{event.title}</CardTitle>
-                </CardHeader>
+      <Tabs defaultValue="upcoming" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
+          <TabsTrigger value="completed">Completed Events</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upcoming">
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-48" />
+                  <CardHeader>
+                    <Skeleton className="h-8 w-3/4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Skeleton className="h-10 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="flex items-center justify-center w-full">
+              <Card className="p-8 text-center w-full flex-grow min-h-[41vh] flex items-center justify-center">
                 <CardContent>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {new Date(event.date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </div>
-                    <div className="flex items-center">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="mr-2 h-4 w-4" />
-                      {event.ticketPrice !== "0"
-                        ? event.paidUsers.length
-                        : event.noOfRegistrations}{" "}
-                      registered
-                    </div>
-                  </div>
+                  <p className="text-muted-foreground">
+                    No upcoming events found
+                  </p>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center w-full">
-                    <span className="font-semibold">
-                      {event.ticketPrice === "0"
-                        ? "Free"
-                        : `${event.ticketPrice} $PASS`}
-                    </span>
-                    <Button
-                      disabled={!event.active || isRegistered}
-                      className="disabled:opacity-85"
-                      onClick={() =>
-                        handleGetTickets(event.id, event.ticketPrice)
-                      }
-                    >
-                      {!event.active
-                        ? "Event Inactive"
-                        : isRegistered
-                        ? "Already registered"
-                        : "Register"}
-                    </Button>
-                  </div>
-                  {isRegistered && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleShowQRCode(event)}
-                    >
-                      <QrCode className="mr-2 h-4 w-4" />
-                      Show QR Code
-                    </Button>
-                  )}
-                </CardFooter>
               </Card>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {upcomingEvents.map(renderEventCard)}
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="completed">
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-48" />
+                  <CardHeader>
+                    <Skeleton className="h-8 w-3/4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Skeleton className="h-10 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : completedEvents.length === 0 ? (
+            <div className="flex items-center justify-center w-full">
+              <Card className="p-8 text-center w-full flex-grow min-h-[41vh] flex items-center justify-center">
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    No completed events found
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {completedEvents.map(renderEventCard)}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {registrationData && (
         <QrCodeDialog
